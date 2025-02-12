@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 public class ProfileDocumentController {
 
     private final ProfileDocumentService service;
+    private static final String ERROR_MESSAGE = "Error: "; // Constant for error messages
 
     public ProfileDocumentController(ProfileDocumentService service) {
         this.service = service;
@@ -23,7 +24,7 @@ public class ProfileDocumentController {
             String id = service.AddProfessionalDocument(file);
             return ResponseEntity.ok("File uploaded successfully, ID: " + id);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
 
@@ -33,17 +34,19 @@ public class ProfileDocumentController {
             String response = service.UpdateProfessionalDocument(id, file);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<ProfileDocument> getDocument(@PathVariable String id) {
         try {
             ProfileDocument document = service.GetProfessionalDocument(id);
             return ResponseEntity.ok(document);
-        } catch (ExecutionException | InterruptedException e) {
+        } catch (ExecutionException e) {
+            return ResponseEntity.status(500).body(null);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt(); // Re-interrupt the thread
             return ResponseEntity.status(500).body(null);
         }
     }
@@ -54,7 +57,7 @@ public class ProfileDocumentController {
             String response = service.DeleteProfessionalDocument(id);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
 }

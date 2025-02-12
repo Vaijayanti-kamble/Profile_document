@@ -3,37 +3,34 @@ package com.example.profiledocument.service;
 import com.example.profiledocument.utility.Utility;
 import com.example.profiledocument.model.ProfileDocument;
 import com.google.cloud.firestore.*;
-import com.google.cloud.storage.*;
-import com.google.cloud.storage.Blob;
-import com.google.firebase.cloud.FirestoreClient;
+import com.google.firebase.cloud.StorageClient;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.InputStream;
 import java.time.LocalDateTime;
-import com.google.cloud.storage.BlobInfo;
 import java.util.concurrent.ExecutionException;
 
 @Service
 public class ProfileDocumentService {
-    private static final String BUCKET_NAME = "documentdoc";
+    private static final String BUCKET_NAME = "documentdoc"; // Ensure this matches your Firebase bucket
     private static final String COLLECTION_NAME = "profile_doc";
-    private final Storage storage;
-    private final Firestore firestore;
 
-    // Inject Firestore and Storage via constructor
-    public ProfileDocumentService(Storage storage, Firestore firestore) {
-        this.storage = storage;
+    private final Firestore firestore;
+    private final StorageClient storageClient;
+
+    public ProfileDocumentService(Firestore firestore, StorageClient storageClient) {
         this.firestore = firestore;
+        this.storageClient = storageClient;
     }
 
-    // Adds a professional document
     public String AddProfessionalDocument(MultipartFile file) throws Exception {
         String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Blob blob = storage.create(
-                BlobInfo.newBuilder(BUCKET_NAME, fileName).setContentType(file.getContentType()).build(),
-                file.getBytes()
-        );
 
-        String fileUrl = blob.getMediaLink();
+        InputStream fileInputStream = file.getInputStream();
+        storageClient.bucket(BUCKET_NAME).create(fileName, fileInputStream, file.getContentType());
+
+        String fileUrl = "https://storage.googleapis.com/" + BUCKET_NAME + "/" + fileName;
         String formattedDate = Utility.getTime(LocalDateTime.now());
 
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document();
@@ -48,7 +45,6 @@ public class ProfileDocumentService {
         return docRef.getId();
     }
 
-    // Updates a professional document
     public String UpdateProfessionalDocument(String documentId, MultipartFile newFile) throws Exception {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(documentId);
         DocumentSnapshot snapshot = docRef.get().get();
@@ -62,21 +58,14 @@ public class ProfileDocumentService {
 
         if (oldFileUrl != null && !oldFileUrl.isEmpty()) {
             String oldFileName = oldFileUrl.substring(oldFileUrl.lastIndexOf("/") + 1);
-            Blob oldBlob = storage.get(BUCKET_NAME, oldFileName);
-            if (oldBlob != null) {
-                oldBlob.delete();  // Only delete if file exists
-            } else {
-                System.out.println("Old file not found in the bucket, skipping deletion.");
-            }
+            storageClient.bucket(BUCKET_NAME).get(oldFileName).delete();
         }
 
         String newFileName = System.currentTimeMillis() + "_" + newFile.getOriginalFilename();
-        Blob newBlob = storage.create(
-                BlobInfo.newBuilder(BUCKET_NAME, newFileName).setContentType(newFile.getContentType()).build(),
-                newFile.getBytes()
-        );
+        InputStream newFileInputStream = newFile.getInputStream();
+        storageClient.bucket(BUCKET_NAME).create(newFileName, newFileInputStream, newFile.getContentType());
 
-        String newFileUrl = newBlob.getMediaLink();
+        String newFileUrl = "https://storage.googleapis.com/" + BUCKET_NAME + "/" + newFileName;
         document.setProfile_Doc_Url(newFileUrl);
         document.setUpdated_Date(Utility.getTime(LocalDateTime.now()));
         docRef.set(document);
@@ -84,7 +73,6 @@ public class ProfileDocumentService {
         return "File updated successfully, new URL: " + newFileUrl;
     }
 
-    // Gets a professional document by its ID
     public ProfileDocument GetProfessionalDocument(String id) throws ExecutionException, InterruptedException {
         DocumentSnapshot snapshot = firestore.collection(COLLECTION_NAME).document(id).get().get();
 
@@ -94,7 +82,6 @@ public class ProfileDocumentService {
         return null;
     }
 
-    // Deletes a professional document by its ID
     public String DeleteProfessionalDocument(String documentId) throws Exception {
         DocumentReference docRef = firestore.collection(COLLECTION_NAME).document(documentId);
         DocumentSnapshot snapshot = docRef.get().get();
@@ -108,12 +95,7 @@ public class ProfileDocumentService {
 
         if (fileUrl != null && !fileUrl.isEmpty()) {
             String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
-            Blob blob = storage.get(BUCKET_NAME, fileName);
-            if (blob != null) {
-                blob.delete(); // Delete file from bucket
-            } else {
-                System.out.println("File not found in the bucket, skipping deletion.");
-            }
+            storageClient.bucket(BUCKET_NAME).get(fileName).delete();
         }
 
         docRef.delete();

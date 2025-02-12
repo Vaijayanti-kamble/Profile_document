@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/user-profession-details")
 public class UserProfessionDetailsController {
 
+    private static final String ERROR_MESSAGE = "Error: ";
+
     private final UserProfessionDetailsService service;
 
     public UserProfessionDetailsController(UserProfessionDetailsService service) {
@@ -21,7 +23,7 @@ public class UserProfessionDetailsController {
             String id = service.saveUserProfessionDetails(details);
             return ResponseEntity.ok("Saved with ID: " + id);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
 
@@ -34,8 +36,11 @@ public class UserProfessionDetailsController {
             } else {
                 return ResponseEntity.status(404).body("No document found with ID: " + id);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Re-interrupt the thread
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + "Operation was interrupted.");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
 
@@ -45,7 +50,7 @@ public class UserProfessionDetailsController {
             String result = service.deleteUserProfessionDetails(id);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+            return ResponseEntity.status(500).body(ERROR_MESSAGE + e.getMessage());
         }
     }
 }

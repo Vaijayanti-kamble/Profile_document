@@ -7,6 +7,7 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import com.google.firebase.cloud.StorageClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import java.io.InputStream;
@@ -15,9 +16,11 @@ import java.io.IOException;
 @Configuration
 public class FirebaseConfig {
 
+    private static final String BUCKET_NAME = "documentdoc"; // Replace with your actual bucket name
+
     @Bean
     public Firestore firestore() throws IOException {
-        InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("profession-details-3d04dc24ba00.json");
+        InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("profession-details-141cb6c65513.json");
 
         if (serviceAccount == null) {
             throw new IOException("Service account file not found");
@@ -36,16 +39,11 @@ public class FirebaseConfig {
     }
 
     @Bean
-    public Storage storage() throws IOException {
-        InputStream serviceAccount = getClass().getClassLoader().getResourceAsStream("profession-details-3d04dc24ba00.json");
-
-        if (serviceAccount == null) {
-            throw new IOException("Service account file not found");
+    public StorageClient storageClient() throws IOException {
+        if (FirebaseApp.getApps().isEmpty()) {
+            throw new IOException("FirebaseApp is not initialized");
         }
-
-        return StorageOptions.newBuilder()
-                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                .build()
-                .getService();
+        return StorageClient.getInstance();
     }
 }
+

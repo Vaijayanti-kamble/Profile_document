@@ -12,6 +12,7 @@ public class ProfileDocument {
     }
 
     public void setId(String id) {
+
         this.id = id;
     }
 
@@ -20,22 +21,28 @@ public class ProfileDocument {
     }
 
     public void setProfile_Doc_Url(String profile_Doc_Url) {
+
         this.profile_Doc_Url = profile_Doc_Url;
     }
 
     public String getCreated_Date() {
+
         return created_Date;
     }
 
     public void setCreated_Date(String created_Date) {
+
         this.created_Date = created_Date;
     }
 
     public String getUpdated_Date() {
+
         return updated_Date;
     }
 
     public void setUpdated_Date(String updated_Date) {
+
+
         this.updated_Date = updated_Date;
     }
 }
